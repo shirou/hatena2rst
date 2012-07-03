@@ -447,7 +447,12 @@ def convert_fotolife(line):
             """
             content['date'] = content['dt'][:8]
             content['initial'] = content['user'][0]
-            content['ext'] = 'png'
+            if "j" == content['dt'][-1]:
+                content['ext'] = 'jpg'
+            else:
+                content['ext'] = 'png'
+            content['dt'] = content['dt'][:-1]  # remove ext parameter
+
             image_url = image_url_tmpl % content
 
             option = get_image_option(content['option'])
