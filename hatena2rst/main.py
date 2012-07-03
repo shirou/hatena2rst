@@ -24,6 +24,8 @@ from constants import codec, indent, status_flag, image_extensions, filetype_map
 """
 main process
 """
+
+
 def main(filename):
     with open(filename, 'rb') as f:
         data = StringIO(f.read())
@@ -34,9 +36,9 @@ def main(filename):
             path = os.path.join(day_split[0], day_split[1], day_split[2])
             if not os.path.exists(path):
                 os.makedirs(path)
-            
+
             day_file = os.path.join(path, day.encode(codec) + ".rst")
-            
+
             fp = open(day_file, 'wb+')
             fp.write(data.encode(codec))
             fp.close()
@@ -67,6 +69,8 @@ def parse_day(day):
 """
 utility functions
 """
+
+
 def string_width(string):
     """
     measure rendered string width.
@@ -103,6 +107,7 @@ quote_sp_end_notation = re.compile("""
 (?P<quote><<)|(?P<sp>\|\|<)
 \Z
 """, re.VERBOSE)
+
 
 def parse_body(body):
     """
@@ -148,14 +153,14 @@ def parse_body(body):
             else:
                 result.append(l)
 
-    result = [ convert_inlines(l) for l in result ]
+    result = [convert_inlines(l) for l in result]
     return '\n'.join(result)
 
 
 def convert_quote(block, site):
     """
     convert quote notation
-    
+
     TODO: find better algorithm for indenting block correctly.
     In reST paragraph requies blanked new line, and as of now
     'adjusted' list and following for loop handles that.
@@ -206,14 +211,14 @@ def convert_quote(block, site):
     return '\n'.join(quoted) + '\n'
 
 
-# super pre notatino
+# super pre notation
 #  - http://goo.gl/Q2szA
 #  - http://goo.gl/xtQWf
 def convert_super_pre(block, filetype):
     """
     convert super pre notation into code-block directive
     """
-    indented_block = [ indent + l for l in block ]
+    indented_block = [indent + l for l in block]
     directive = [".. code-block:: %s\n" % filetype_map.get(filetype, "none")]
     return "\n".join(directive + indented_block) + "\n"
 
@@ -226,6 +231,7 @@ convert in-line notations
   - id notation (id:user:20120512, etc)
   - fotolive notation ([f:id:user:20120512094500:image], etc)
 """
+
 
 def convert_inlines(line):
     line = convert_section(line)
@@ -244,6 +250,7 @@ def convert_inlines(line):
 chapter_notation = re.compile("""
 \A\s*\*(?P<epoch>[0-9]{9,10})\*\s*(?P<title>.*)
 """, re.VERBOSE)
+
 
 def convert_chapter(line):
     matched = chapter_notation.search(line)
@@ -265,6 +272,7 @@ section_notation = re.compile("""
 \A(?P<notation>\*{2,3})\s*(?P<title>.*)
 """, re.VERBOSE)
 
+
 def convert_section(line):
     matched = section_notation.search(line)
     if matched:
@@ -277,7 +285,8 @@ def convert_section(line):
         return "%s\n%s" % (content['title'], division * length)
     else:
         return line
-    
+
+
 # hyperlink notation
 #  - http://goo.gl/m8cS
 hyperlink_notation = re.compile("""
@@ -288,6 +297,7 @@ hyperlink_notation = re.compile("""
 (?P<image>:image)?
 \]
 """, re.VERBOSE)
+
 
 def convert_link(line):
     """
@@ -304,7 +314,7 @@ def convert_link(line):
         bookmark = content['bookmark']
         image = content['image']
         title = content['title']
-    
+
         if url and title:
             converted = " `%s <%s>`_ " % (title, url)
         elif url and not title:
@@ -322,8 +332,9 @@ list_notation = re.compile("""
 \A(?P<depth>(\-{1,3}|\+{1,3}))(?P<content>.*)
 """, re.VERBOSE)
 
+
 def convert_list(line):
-    markup_map = {"-": "*", 
+    markup_map = {"-": "*",
                   "+": "#."}
     matched = list_notation.search(line)
     prefix = ""
@@ -331,7 +342,7 @@ def convert_list(line):
         content = matched.groupdict()
         if content['depth']:
             markup = markup_map[content['depth'][0]]
-            prefix = indent * ( len(content['depth']) - 1 ) + markup
+            prefix = indent * (len(content['depth']) - 1) + markup
         return "%s %s" % (prefix, content['content'])
     else:
         return line
@@ -347,8 +358,9 @@ id_notation = re.compile("""
 
 diary_url_tmpl = r"http://d.hatena.ne.jp/%s/"
 
+
 def convert_id(line):
-    separator_map = {"#": "#", 
+    separator_map = {"#": "#",
                      ":": "/"}
     target = line
     for m in id_notation.finditer(line):
@@ -370,7 +382,8 @@ def convert_id(line):
         target = target.replace(notation, converted)
 
     return target
-    
+
+
 # fotolife notation
 #  - http://goo.gl/yxb8
 fotolife_notation = re.compile("""
@@ -383,12 +396,14 @@ fotolife_notation = re.compile("""
 image_url_tmpl = (r"http://f.hatena.ne.jp/images/fotolife/" +
                   r"%(initial)s/%(user)s/%(date)s/%(dt)s.%(ext)s")
 
+
 def generate_image_directive(image_url, option):
     directive = ".. image:: %s\n" % image_url
     for k, v in option.items():
         if v:
             directive += "   :%s: %s\n" % (k, v)
     return directive
+
 
 def get_image_option(option_string):
     option_dict = dict(
@@ -416,12 +431,13 @@ def get_image_option(option_string):
 
     return option_dict
 
+
 def convert_fotolife(line):
     target = line
     for m in fotolife_notation.finditer(line):
         notation = m.group(0)
         content = m.groupdict()
-        
+
         if content['image']:
             """
             TODO: Replace this image url generator with
@@ -433,7 +449,7 @@ def convert_fotolife(line):
             content['initial'] = content['user'][0]
             content['ext'] = 'png'
             image_url = image_url_tmpl % content
-            
+
             option = get_image_option(content['option'])
             converted = generate_image_directive(image_url, option)
             target = target.replace(notation, converted)
