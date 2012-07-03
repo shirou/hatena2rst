@@ -10,6 +10,7 @@ import unicodedata
 # standard module
 import re
 import sys
+import os
 from datetime import datetime
 
 if sys.version_info[0] == 2:
@@ -29,7 +30,13 @@ def main(filename):
         tree = etree.parse(data, etree.XMLParser(recover=True))
         results = parse_hatena_xml(tree)
         for day, data in results:
-            day_file = day.encode(codec) + ".rst"
+            day_split = day.split("-")
+            path = os.path.join(day_split[0], day_split[1], day_split[2])
+            if not os.path.exists(path):
+                os.makedirs(path)
+            
+            day_file = os.path.join(path, day.encode(codec) + ".rst")
+            
             fp = open(day_file, 'wb+')
             fp.write(data.encode(codec))
             fp.close()
