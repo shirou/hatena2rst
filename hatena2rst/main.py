@@ -147,8 +147,10 @@ def parse_body(body):
             if start:
                 content = start.groupdict()
                 if content['quote']:
+                    result.append('')  # insert empty line to prevent error
                     status = status_flag["IN_QUOTE"]
                 elif content['sp']:
+                    result.append('')  # insert empty line to prevent error
                     status = status_flag["IN_SUPERPRE"]
             else:
                 result.append(l)
